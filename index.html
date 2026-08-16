@@ -1,89 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VPN · one per location</title>
-    <!-- no CSS, plain text output -->
-</head>
-<body>
-    <pre id="output">Loading…</pre>
-
-    <script>
-        (async function() {
-            const url = 'https://raw.githack.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS_mobile.txt';
-            const output = document.getElementById('output');
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const text = await response.text();
-
-                // split into lines, skip comments and empty
-                const lines = text.split(/\r?\n/);
-                const vlessLines = lines.filter(line =>
-                    line.trim().startsWith('vless://') || line.trim().startsWith('hysteria2://') || line.trim().startsWith('trojan://')
-                );
-
-                // map: location (country code / city) → first config
-                const locationMap = new Map();
-
-                for (const fullLine of vlessLines) {
-                    const trimmed = fullLine.trim();
-                    // extract fragment (#…)
-                    const hashIndex = trimmed.lastIndexOf('#');
-                    let fragment = '';
-                    if (hashIndex !== -1) {
-                        fragment = trimmed.substring(hashIndex + 1);
-                    }
-
-                    // decode percent-encoded fragment to get readable location
-                    let decodedFragment = fragment;
-                    try {
-                        decodedFragment = decodeURIComponent(fragment);
-                    } catch (_) { /* keep original */ }
-
-                    // extract location: we look for country emoji + city or country name
-                    // typical patterns: "🇵🇱 Poland" or "🇵🇱 Poland, Warsaw" or "🇺🇸 United States, Ashburn"
-                    // we'll use the first part after the fragment (or the whole decoded fragment)
-                    let locationKey = decodedFragment.trim();
-                    if (!locationKey) {
-                        // fallback: try to parse from query? but we prefer fragment
-                        continue;
-                    }
-
-                    // Normalize: remove trailing "| [BL]" or similar, but keep country/city
-                    // we want to group by country (and city if available) – but requirement: "по 1 серверу с каждой локации"
-                    // "локация" = location, we consider unique fragment (after decoding) as location identifier.
-                    // But many fragments have same country but different cities -> we treat each unique fragment as separate location.
-                    // However the example shows: "France, Paris" and "France, Paris | 🌐" etc. We want "each location".
-                    // To be safe: we use the full decoded fragment as key (after trimming).
-                    // But if two lines have identical fragment, we take first.
-                    // Also clean up "| [BL]" etc. but keep the rest.
-                    // For grouping we use locationKey as is (case-sensitive, emojis preserved)
-                    if (!locationMap.has(locationKey)) {
-                        // store the first occurrence
-                        locationMap.set(locationKey, trimmed);
-                    }
-                }
-
-                // Build output: we want to show only the configs (one per location)
-                // The requested format: show each config as plain text line.
-                // No extra wrapper, just the config lines.
-                const uniqueConfigs = Array.from(locationMap.values());
-
-                if (uniqueConfigs.length === 0) {
-                    output.textContent = 'No valid vless/hysteria/trojan lines found.';
-                    return;
-                }
-
-                // Join with newline
-                output.textContent = uniqueConfigs.join('\n');
-
-            } catch (err) {
-                output.textContent = `Error: ${err.message}`;
-            }
-        })();
-    </script>
-</body>
-</html>
+# profile-title: Tisonan VPN
+# profile-update-interval: 1
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@45.151.30.127:9882?type=grpc&security=reality&encryption=none&sni=dl.google.com&serviceName=grpc-tunnel&fp=chrome&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU#🇰🇿Казахстан
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@45.151.30.127:9882?type=grpc&security=reality&encryption=none&sni=dl.google.com&serviceName=grpc-tunnel&fp=firefox&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU#🇰🇿LTE - Казахстан
+vless://b9125df6-2a60-4643-bcba-a5f78cb663a7@id.tutdesignstudio.site:8443?type=tcp&security=tls&encryption=none&flow=xtls-rprx-vision&fp=firefox&sni=id.tutdesignstudio.site#🇵🇱Польша
+vless://423b1d79-08c4-403f-9d5e-c541f791b55f@mws.tunnelgate.org:14443?security=tls&type=ws&sni=mws.tunnelgate.org&path=%2Fpl&fp=firefox#🇵🇱LTE - Польша
+vless://218fd696-e3a2-4c33-b397-a5f13a82969e@46.8.221.218:443?encryption=none&fp=firefox&mode=gun&pbk=vxhkDXfYpz1OLqZ-_9QVoQr3_UJLtJFheb5bD5YH7z8&security=reality&serviceName=grpc&sid=3303c7a5&sni=media2.tcpdoor.net&type=grpc#🇩🇪Германия
+vless://851ed0d8-a37b-452d-8ef2-5b6c2d28a060@37.18.14.74:2027?encryption=none&flow=xtls-rprx-vision&fp=qq&pbk=ISa-DZOI4LRRb9DHMFYm5oFqBXDjYzz0hVWUfWvzLmo&security=reality&sid=dc8109baf0f607ea&sni=storage.yandex.net#🇩🇪LTE - Германия
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@62.233.43.86:9898?encryption=none&fp=edge&mode=gun&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&security=reality&serviceName=grpc-tunnel&sni=dl.google.com&type=grpc#🇫🇮Финляндия
+vless://c7e9c591-2764-423a-afca-efbd010fd396@45.139.184.183:2053?host=forfreeuse.rtqa.ru&path=%2F&security=tls&sni=forfreeuse.rtqa.ru&type=ws&fp=qq#🇫🇮LTE - Финляндия
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@134.0.116.208:9878?encryption=none&fp=edge&mode=gun&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&security=reality&serviceName=grpc-tunnel&sid=aa&sni=dl.google.com&type=grpc#🇫🇷Франция
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@134.0.116.208:9878?type=grpc&security=reality&fp=chrome&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sni=dl.google.com&serviceName=grpc-tunnel#🇫🇷LTE - Франция
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@176.108.252.108:9880?type=grpc&security=reality&fp=chrome&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sid=aabb&sni=dl.google.com&serviceName=grpc-tunnel#🇮🇹Италия
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@176.108.252.108:9880?type=grpc&headerType=none&security=reality&encryption=none&sni=dl.google.com&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&serviceName=grpc-tunnel&fp=firefox#🇮🇹LTE - Италия
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@176.109.108.196:9892?encryption=none&fp=firefox&mode=gun&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&security=reality&serviceName=grpc-tunnel&sni=dl.google.com&type=grpc#🇷🇸Сербия
+vless://130e6aab-9eba-441e-9021-22cbccc72832@176.109.106.34:9888?encryption=none&fp=firefox&mode=gun&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&security=reality&serviceName=grpc-tunnel&sid=aabbccdd&sni=dl.google.com&type=grpc#🇷🇸LTE - Сербия
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@194.58.95.183:9871?security=reality&encryption=none&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&type=grpc&serviceName=grpc-tunnel&sni=dl.google.com&sid=aa&fp=edge#🇸🇪Швеция
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@194.58.95.183:9871?security=reality&encryption=none&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&type=grpc&serviceName=grpc-tunnel&sni=dl.google.com&sid=aa&fp=firefox#🇸🇪LTE - Швеция
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@45.151.30.127:9873?encryption=none&fp=chrome&mode=gun&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&security=reality&serviceName=grpc-tunnel&sni=dl.google.com&type=grpc#🇺🇸США
+vless://2a650f3b-d95b-4bd6-aadf-16ccc0717155@45.151.30.127:9873?type=grpc&security=reality&fp=firefox&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sid=aabbccdd&sni=dl.google.com&serviceName=grpc-tunnel#🇺🇸LTE - США
+vless://081f4a5d-f8ed-07d0-b824-49d1d563730f@139.100.197.28:52006?type=raw&security=tls&flow=xtls-rprx-vision&fp=qq&sni=search.setlisting.ru#🇷🇺Россия
+vless://5aaad01d-e200-07d0-b1f2-860875e1cbe9@139.100.197.28:52006?encryption=none&flow=xtls-rprx-vision&fp=qq&security=tls&sni=search.setlisting.ru&type=raw#🇷🇺LTE - Россия
+vless://ba222add-6ac1-45f1-9a18-f91cb38e324f@201.51.1.84:16923?encryption=none&fp=firefox&mode=gun&pbk=_QeslG3rHGM7DoM99pYC8-jpc16pM2MbNZ6NRMoxmHA&security=reality&serviceName=neurex&sid=10ffb85da1c2d986&sni=api-maps.yandex.ru&type=grpc#🇷🇺Россия
+vless://fc07967d-925b-4246-a535-9527a8242a16@217.198.169.86:443?encryption=none&extra=null&fp=chrome&path=/wk7Lj2YbQfCoLCnY5dZ3&pbk=h5rOWssRWMnFJ0Ka0-PwBwwg3PMPifPShXutXEoj2QM&security=reality&sid=b8ac5fcfceca&sni=avatars.mds.yandex.net&type=xhttp#🇷🇺LTE - Россия
+vless://423b1d79-08c4-403f-9d5e-c541f791b55f@176.109.85.71:14443?alpn=http/1.1&encryption=none&fp=qq&host=mws.tunnelgate.org&path=/ru&security=tls&sni=mws.tunnelgate.org&type=ws#🇷🇺Россия
+vless://423b1d79-08c4-403f-9d5e-c541f791b55f@mws.tunnelgate.org:14443?security=tls&type=ws&sni=mws.tunnelgate.org&path=%2Fru&fp=ios#🇷🇺LTE - Россия
+vless://b6b92515-13c5-4e6e-9fea-8db2d44628a0@veilix.ciphero.xyz:443?type=tcp&headerType=none&security=reality&encryption=none&sni=veilix.ciphero.xyz&fp=firefox&pbk=8qUm4S6MR9bLa-ZfblO64aKjRIwGEFEwdVIxgz_tbn4&sid=33b5887524592cad&flow=xtls-rprx-vision#🇫🇮Финляндия
+vless://133f76fc-a5ab-463e-b46d-9587d7137e55@node1.vpnushka.lol:8443?type=grpc&security=reality&encryption=none&sni=node1.vpnushka.lol&serviceName=vless-grpc&fp=chrome&pbk=NcgaaRF5JoFvvQlxyJ-twmjQ1GVNI19gVKSdna52rjc&sid=a96b6c796068f51c&mode=multi#🇩🇪Германия
+vless://921db318-1694-4408-9cc7-c93df39f7f8e@de.monkora.org:443?type=tcp&security=reality&encryption=none&fp=firefox&pbk=aUdvs6o4PHN6jmdkIKBA2rHsN_7l8W2SaDfNgzn-BwU&sni=de.monkora.org#🇩🇪LTE - Германия
+vless://670decfe-68cc-499e-8cb1-22b39c20acbb@nl8.helper-internet.com:443?type=tcp&security=reality&encryption=none&flow=xtls-rprx-vision&fp=random&pbk=W-zf_ncm9sYALF5EqvUsxqTkYGdAw-tQczT2SqwVMGE&sid=ff776ff77be48b88&sni=nl8.helper-internet.com#🇳🇱Нидерланды
+vless://670decfe-68cc-499e-8cb1-22b39c20acbb@185.209.15.215:443?type=tcp&security=reality&encryption=none&flow=xtls-rprx-vision&fp=qq&pbk=pgG2grngQEtOFJImLfz0AEm-O2IodM2jCY4aMCYQI1U&sid=6aa2d2e950441a9a&sni=nl7.helper-internet.com#🇳🇱LTE - Нидерланды
+vless://423b1d79-08c4-403f-9d5e-c541f791b55f@217.60.23.231:443?type=tcp&security=reality&sni=eu-west.cendora.ru&pbk=m6RDw1b8R4lCaRUIzhHpy6TtX2Dhk6nyby8dWzeQqA0&sid=dd3ff38418d29d22&fp=edge&encryption=none&flow=xtls-rprx-vision#🇳🇱Нидерланды
+vless://670decfe-68cc-499e-8cb1-22b39c20acbb@eng3.helper-internet.com:443?type=tcp&security=reality&encryption=none&flow=xtls-rprx-vision&fp=firefox&pbk=W-zf_ncm9sYALF5EqvUsxqTkYGdAw-tQczT2SqwVMGE&sid=ff776ff77be48b88&sni=eng3.helper-internet.com#🇬🇧Великобритания
+vless://921db318-1694-4408-9cc7-c93df39f7f8e@164.37.110.121:443?encryption=none&fp=firefox&pbk=aUdvs6o4PHN6jmdkIKBA2rHsN_7l8W2SaDfNgzn-BwU&security=reality&sni=uk.monkora.org&type=tcp#🇬🇧LTE - Великобритания
